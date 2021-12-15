@@ -80,4 +80,30 @@
                     throw new System.NotImplementedException();
                 }
             }
+
+            public interface IA
+            {
+        
+            }
+            public interface IB
+            {
+        
+            }
+            class ClassA : IB
+            {
+                private IB ib;
+                public ClassA(IB ib)
+                {
+                    ib = this.ib;
+                }
+            }
+            class ClassB : IA
+            {
+                private IA ia;
+                public ClassB(IA ia)
+                {
+                    ia = this.ia;
+                }
+            }
+            
 }

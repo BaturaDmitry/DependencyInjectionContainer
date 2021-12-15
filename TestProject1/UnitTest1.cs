@@ -20,7 +20,8 @@ namespace TestProject1
             DependenciesConfiguration1 = new DependencyConfig();
             DependenciesConfiguration1.Register<ISomeInterface, Class>();
             DependenciesConfiguration1.Register<ITestClass, TestClass>();
-
+            DependenciesConfiguration1.Register<IB, ClassA>(LifeCycle.Singleton,ImplNumber.First);
+            DependenciesConfiguration1.Register<IA, ClassB>(LifeCycle.Singleton,ImplNumber.Second);
             DependenciesConfiguration2 = new DependencyConfig();
             DependenciesConfiguration2.Register<ISomeInterface, Class>();
             DependenciesConfiguration2.Register<ISomeInterface, Class2>();
@@ -42,8 +43,8 @@ namespace TestProject1
             bool keyOfITestClass =DependenciesConfiguration1.DependenciesDictionary.ContainsKey(typeof(ITestClass));
             int numberOfKeys=DependenciesConfiguration1.DependenciesDictionary.Keys.Count;
             Assert.IsTrue(keyOfISomeInterface, "Dependency dictionary hasn't key ISomeInterface.");
-            Assert.IsTrue(keyOfITestClass, "Dependency dictionary hasn't key IStrange.");
-            Assert.AreEqual(numberOfKeys, 2,"Dependency dictionary has another number of keys.");
+            Assert.IsTrue(keyOfITestClass, "Dependency dictionary hasn't key ITestClass.");
+            Assert.AreEqual(numberOfKeys, 4,"Dependency dictionary has another number of keys.");
         }
 
         [Test]
@@ -62,7 +63,7 @@ namespace TestProject1
         [Test]
         public void SimpleDependencyProvider()
         {
-            var provider = new DependencyProvider( DependenciesConfiguration1);
+            var provider = new DependencyProvider(DependenciesConfiguration1);
             var result = provider.Resolve<ITestClass>();
             var innerInterface = ((TestClass)result).isomeInterface;
             Assert.AreEqual(result.GetType(), typeof(TestClass),"Wrong type of resolving result.");

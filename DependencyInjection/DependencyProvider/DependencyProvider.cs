@@ -14,6 +14,7 @@ namespace DependencyInjection.DependencyProvider
     {
         private readonly DependencyConfig _configuration;
         public readonly Dictionary<Type, List<SingletonContainer>> _singletons;
+        private readonly Stack<Type> _recursionStackResolver = new Stack<Type>();
 
         public DependencyProvider(DependencyConfig configuration)
         {
@@ -36,17 +37,24 @@ namespace DependencyInjection.DependencyProvider
         public object Resolve(Type dependencyType, ImplNumber number = ImplNumber.Any)
         {
             object result;
+            if (_recursionStackResolver.Contains(dependencyType))
+            {
+                return null;
+            }
+            _recursionStackResolver.Push(dependencyType);
             if (this.IsIEnumerable(dependencyType))
             {
                 result = CreateEnumerable(dependencyType.GetGenericArguments()[0]);
             }
             else
             {
+                
                 ImplContainer container = GetImplContainerByDependencyType(dependencyType, number);
                 Type requiredType = GetGeneratedType(dependencyType, container.ImplementationsType);
                 result = this.ResolveNonIEnumerable(requiredType, container.TimeToLive, dependencyType, container.ImplNumber);
             }
 
+            _recursionStackResolver.Pop();
             return result;
         }
 
