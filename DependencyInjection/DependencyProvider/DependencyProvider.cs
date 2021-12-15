@@ -58,7 +58,7 @@ namespace DependencyInjection.DependencyProvider
                 return CreateInstance(implType);
             }
 
-            ////////
+         
             if (IsInSingletons(dependencyType, implType, number))
             {
                 return this._singletons[dependencyType]
@@ -68,7 +68,7 @@ namespace DependencyInjection.DependencyProvider
             var result = CreateInstance(implType);
             this.AddToSingletons(dependencyType, result, number);
             return result;
-            ///
+           
         }
 
         private ImplContainer GetImplContainerByDependencyType(Type dependencyType, ImplNumber number)
@@ -77,6 +77,7 @@ namespace DependencyInjection.DependencyProvider
             if (dependencyType.IsGenericType)
             {
                 container = GetImplementationsContainerLast(dependencyType, number);
+                // возвращает значение своего левого операнда, если оно не null; в противном случае он вычисляет правый операнд и возвращает его результат.
                 container ??= GetImplementationsContainerLast(dependencyType.GetGenericTypeDefinition(), number);
             }
             else

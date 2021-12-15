@@ -49,6 +49,7 @@ namespace DependencyInjection.DependencyConfiguration
 
         private bool IsDependency(Type implementation, Type dependency)
         {
+            //Определяет, может ли экземпляр указанного типа c быть назначен переменной текущего типаОпределяет, может ли экземпляр указанного типа c быть назначен переменной текущего типа
             return implementation.IsAssignableFrom(dependency) || implementation.GetInterfaces().Any(i => i.ToString() == dependency.ToString());
         }
     }

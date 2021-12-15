@@ -1,61 +1,71 @@
+using System;
 using NUnit.Framework;
 using DependencyInjection.DependencyConfiguration;
 using DependencyInjection.DependencyConfiguration.ImplementationData;
 using DependencyInjection.DependencyProvider;
+using NUnit.Framework.Interfaces;
+using NUnit.Framework.Internal;
 using LifeCycle = DependencyInjection.DependencyConfiguration.ImplementationData.LifeCycle;
 
 namespace TestProject1
 {
     public class Tests
     {
-        DependencyConfig dependencies;
-        DependencyConfig dependencies1;
+        private DependencyConfig DependenciesConfiguration1;
+        private DependencyConfig DependenciesConfiguration2;
 
         [SetUp]
         public void Setup()
         {
-            dependencies = new DependencyConfig();
-            dependencies.Register<IInterface, Class>();
-            dependencies.Register<IStrange, Strange>();
+            DependenciesConfiguration1 = new DependencyConfig();
+            DependenciesConfiguration1.Register<ISomeInterface, Class>();
+            DependenciesConfiguration1.Register<ITestClass, TestClass>();
 
-            dependencies1 = new DependencyConfig();
-            dependencies1.Register<IInterface, Class>();
-            dependencies1.Register<IInterface, Class2>();
-            dependencies1.Register<IStrange, Strange>(LifeCycle.InstancePerDependency,ImplNumber.First);
-            dependencies1.Register<IStrange, Strange2>(LifeCycle.InstancePerDependency,ImplNumber.Second);
+            DependenciesConfiguration2 = new DependencyConfig();
+            DependenciesConfiguration2.Register<ISomeInterface, Class>();
+            DependenciesConfiguration2.Register<ISomeInterface, Class2>();
+            DependenciesConfiguration2.Register<ITestClass, TestClass>(LifeCycle.InstancePerDependency,ImplNumber.First);
+            DependenciesConfiguration2.Register<ITestClass, TestClass2>(LifeCycle.InstancePerDependency,ImplNumber.Second);
         }
-        
+        [Test]
+        public void Init_DependenciesConfigurationCreatedSuccessfully()
+        {
+            Assert.NotNull(DependenciesConfiguration1);
+            Assert.IsNotEmpty(DependenciesConfiguration1.DependenciesDictionary);
+            Assert.NotNull( DependenciesConfiguration2);
+            Assert.IsNotEmpty(DependenciesConfiguration2.DependenciesDictionary);
+        }
         [Test]
         public void RegisteringDependencies()
         {
-            bool v1 = dependencies.DependenciesDictionary.ContainsKey(typeof(IInterface));
-            bool v2 = dependencies.DependenciesDictionary.ContainsKey(typeof(IStrange));
-            int num = dependencies.DependenciesDictionary.Keys.Count;
-            Assert.IsTrue(v1, "Dependency dictionary hasn't key IInterface.");
-            Assert.IsTrue(v2, "Dependency dictionary hasn't key IStrange.");
-            Assert.AreEqual(num, 2,"Dependency dictionary has another number of keys.");
+            bool keyOfISomeInterface =DependenciesConfiguration1.DependenciesDictionary.ContainsKey(typeof(ISomeInterface));
+            bool keyOfITestClass =DependenciesConfiguration1.DependenciesDictionary.ContainsKey(typeof(ITestClass));
+            int numberOfKeys=DependenciesConfiguration1.DependenciesDictionary.Keys.Count;
+            Assert.IsTrue(keyOfISomeInterface, "Dependency dictionary hasn't key ISomeInterface.");
+            Assert.IsTrue(keyOfITestClass, "Dependency dictionary hasn't key IStrange.");
+            Assert.AreEqual(numberOfKeys, 2,"Dependency dictionary has another number of keys.");
         }
 
         [Test]
         public void RegisterDoubleDependency()
         {
-            var containers = dependencies1.DependenciesDictionary[typeof(IInterface)];
-            var type1 = containers[0].ImplementationsType;
-            var type2 = containers[1].ImplementationsType;
-            int num = dependencies1.DependenciesDictionary.Keys.Count;
+            var containers = DependenciesConfiguration2.DependenciesDictionary[typeof(ISomeInterface)];
+            var firstType = containers[0].ImplementationsType;
+            var secondType = containers[1].ImplementationsType;
+            int numberOfKeys = DependenciesConfiguration2.DependenciesDictionary.Keys.Count;
             Assert.AreEqual(containers.Count, 2, "Wrong number of dependencies of IInterface.");
-            Assert.AreEqual(type1, typeof(Class), "Another type of class Class in container.");
-            Assert.AreEqual(type2, typeof(Class2), "Another type of class Class2 in container.");
-            Assert.AreEqual(num, 2,"Dependency dictionary has another number of keys.");
+            Assert.AreEqual(firstType, typeof(Class), "Another type of class Class in container.");
+            Assert.AreEqual(secondType, typeof(Class2), "Another type of class Class2 in container.");
+            Assert.AreEqual(numberOfKeys, 2,"Dependency dictionary has another number of keys.");
         }
 
         [Test]
         public void SimpleDependencyProvider()
         {
-            var provider = new DependencyProvider(dependencies);
-            var result = provider.Resolve<IStrange>();
-            var innerInterface = ((Strange)result).iInterface;
-            Assert.AreEqual(result.GetType(), typeof(Strange),"Wrong type of resolving result.");
+            var provider = new DependencyProvider( DependenciesConfiguration1);
+            var result = provider.Resolve<ITestClass>();
+            var innerInterface = ((TestClass)result).isomeInterface;
+            Assert.AreEqual(result.GetType(), typeof(TestClass),"Wrong type of resolving result.");
             Assert.AreEqual(innerInterface == null, false, "Error in creating an instance of dependency.");
             Assert.AreEqual(innerInterface.GetType(), typeof(Class), "Wrong type of created dependency.");
         }
@@ -63,9 +73,9 @@ namespace TestProject1
         [Test]
         public void DoubleDependencyProvider()
         {
-            var provider = new DependencyProvider(dependencies1);
-            var result = provider.Resolve<IStrange>();
-            var innerInterface = ((Strange2)result).iInterface;
+            var provider = new DependencyProvider(DependenciesConfiguration2);
+            var result = provider.Resolve<ITestClass>();
+            var innerInterface = ((TestClass2)result).isomeInterface;
             Assert.AreEqual(innerInterface.GetType(),typeof(Class2),"Wrong type of created instance.");
         }
 
@@ -73,22 +83,22 @@ namespace TestProject1
         public void SingletonObj()
         {
             var dep1 = new DependencyConfig();
-            dep1.Register<IInterface, Class>(LifeCycle.Singleton);
-            dep1.Register<IStrange, Strange>(LifeCycle.Singleton);
+            dep1.Register<ISomeInterface, Class>(LifeCycle.Singleton);
+            dep1.Register<ITestClass, TestClass>(LifeCycle.Singleton);
             var provider = new DependencyProvider(dep1);
-            var obj11 = provider.Resolve<IStrange>();
-            var obj12 = provider.Resolve<IStrange>();
+            var obj11 = provider.Resolve<ITestClass>();
+            var obj12 = provider.Resolve<ITestClass>();
             var b1 = obj11 == obj12;
 
             int count1 = provider._singletons.Count;
             Assert.AreEqual(count1, 2, "Wrong number of Singleton objects in Dictionary for Singleton");
 
             var dep2 = new DependencyConfig();
-            dep2.Register<IInterface, Class>(LifeCycle.InstancePerDependency);
-            dep2.Register<IStrange, Strange>(LifeCycle.InstancePerDependency);
+            dep2.Register<ISomeInterface, Class>(LifeCycle.InstancePerDependency);
+            dep2.Register<ITestClass, TestClass>(LifeCycle.InstancePerDependency);
             var provider2 = new DependencyProvider(dep2);
-            var obj21 = provider2.Resolve<IStrange>();
-            var obj22 = provider2.Resolve<IStrange>();
+            var obj21 = provider2.Resolve<ITestClass>();
+            var obj22 = provider2.Resolve<ITestClass>();
             var b2 = obj21 == obj22;
 
             int count2 = provider2._singletons.Count;
@@ -101,92 +111,12 @@ namespace TestProject1
         [Test]
         public void ImplNumberProvider()
         {
-            var provider = new DependencyProvider(dependencies1);
-            var result = provider.Resolve<IStrange>(ImplNumber.First);
-            var result1 = provider.Resolve<IStrange>(ImplNumber.Second);
-            Assert.AreEqual(result.GetType(), typeof(Strange), "Wrong type for First dependency.");
-            Assert.AreEqual(result1.GetType(), typeof(Strange2), "Wrong type for Second dependency");
+            var provider = new DependencyProvider(DependenciesConfiguration2);
+            var result = provider.Resolve<ITestClass>(ImplNumber.First);
+            var result1 = provider.Resolve<ITestClass>(ImplNumber.Second);
+            Assert.AreEqual(result.GetType(), typeof(TestClass), "Wrong type for First dependency.");
+            Assert.AreEqual(result1.GetType(), typeof(TestClass2), "Wrong type for Second dependency");
         }
     }
-
-    interface IInterface
-    {
-        void method1();
-
-        void method2();
-    }
-
-    class Class : IInterface
-    {
-
-        public void method1()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void method2()
-        {
-            throw new System.NotImplementedException();
-        }
-    }
-
-    interface IStrange
-    {
-        void mth1();
-
-        void mth2();
-    }
-
-    class Strange : IStrange
-    {
-        public IInterface iInterface;
-
-        public Strange(IInterface iInterface)
-        {
-            this.iInterface = iInterface;
-        }
-
-        public void mth1()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void mth2()
-        {
-            throw new System.NotImplementedException();
-        }
-    }
-
-    class Strange2 : IStrange
-    {
-        public IInterface iInterface;
-
-        public Strange2(IInterface iInterface)
-        {
-            this.iInterface = iInterface;
-        }
-
-        public void mth1()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void mth2()
-        {
-            throw new System.NotImplementedException();
-        }
-    }
-
-    class Class2 : IInterface
-    {
-        public void method1()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void method2()
-        {
-            throw new System.NotImplementedException();
-        }
-    }
+    
 }
