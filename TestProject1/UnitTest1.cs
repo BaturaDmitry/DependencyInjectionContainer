@@ -127,6 +127,16 @@ namespace TestProject1
         }
         
         [Test]
+        public void A()
+        {
+            var dep1 = new DependencyConfig();
+            dep1.Register<IA, ClassWithA>(LifeCycle.Singleton);
+            var provider = new DependencyProvider(dep1);
+            ClassWithA obj11 = (ClassWithA)provider.Resolve<IA>();
+            Assert.NotNull(obj11.ia);
+        }
+        
+        [Test]
         public void ImplNumberProvider()
         {
             var provider = new DependencyProvider(DependenciesConfiguration2);

@@ -105,5 +105,13 @@
                     this.ia = ia;
                 }
             }
+           public class ClassWithA : IA
+           {
+               public IA ia;
+               public ClassWithA(IA ia)
+               {
+                   this.ia = ia;
+               }
+           }
             
 }
