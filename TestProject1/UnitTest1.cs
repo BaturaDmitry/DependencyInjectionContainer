@@ -113,6 +113,7 @@ namespace TestProject1
             dep1.Register<IB, ClassB>(LifeCycle.Singleton);
             var provider = new DependencyProvider(dep1);
             ClassA obj11 = (ClassA)provider.Resolve<IA>();
+            ClassB obj12 = (ClassB)provider.Resolve<IB>();
             int numberOfKeys=dep1.DependenciesDictionary.Keys.Count;
             bool keyOfIA =dep1.DependenciesDictionary.ContainsKey(typeof(IA));
             bool keyOfIB =dep1.DependenciesDictionary.ContainsKey(typeof(IB));
@@ -121,7 +122,8 @@ namespace TestProject1
             Assert.AreEqual(numberOfKeys, 2,"Dependency dictionary has another number of keys.");
             Assert.IsNotNull(obj11);
             Assert.IsNotNull(obj11.ib);
-
+            Assert.IsNotNull(obj12);
+            Assert.IsNotNull(obj12.ia);
         }
         
         [Test]

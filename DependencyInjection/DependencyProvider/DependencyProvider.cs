@@ -12,6 +12,7 @@ namespace DependencyInjection.DependencyProvider
 {
     public class DependencyProvider
     {
+        
         private readonly DependencyConfig _configuration;
         public readonly Dictionary<Type, List<SingletonContainer>> _singletons;
         private readonly Stack<Type> _recursionStackResolver = new Stack<Type>();
