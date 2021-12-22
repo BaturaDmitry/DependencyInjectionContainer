@@ -89,20 +89,20 @@
             {
         
             }
-            class ClassA : IB
+            public  class ClassA : IA
             {
-                private IB ib;
+                public IB ib;
                 public ClassA(IB ib)
                 {
-                    ib = this.ib;
+                    this.ib = ib;
                 }
             }
-            class ClassB : IA
+           public class ClassB : IB
             {
-                private IA ia;
+                public IA ia;
                 public ClassB(IA ia)
                 {
-                    ia = this.ia;
+                    this.ia = ia;
                 }
             }
             

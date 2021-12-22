@@ -15,7 +15,7 @@ namespace DependencyInjection.DependencyProvider
         private readonly DependencyConfig _configuration;
         public readonly Dictionary<Type, List<SingletonContainer>> _singletons;
         private readonly Stack<Type> _recursionStackResolver = new Stack<Type>();
-
+        private bool circularDependency;
         public DependencyProvider(DependencyConfig configuration)
         {
             ConfigValidator configValidator = new ConfigValidator(configuration);
@@ -37,10 +37,17 @@ namespace DependencyInjection.DependencyProvider
         public object Resolve(Type dependencyType, ImplNumber number = ImplNumber.Any)
         {
             object result;
-            if (_recursionStackResolver.Contains(dependencyType))
+            if (circularDependency)
             {
+                circularDependency = false;
                 return null;
             }
+            
+            if (_recursionStackResolver.Contains(dependencyType))
+            {
+                circularDependency = true;
+            }
+
             _recursionStackResolver.Push(dependencyType);
             if (this.IsIEnumerable(dependencyType))
             {
@@ -61,6 +68,7 @@ namespace DependencyInjection.DependencyProvider
         private object ResolveNonIEnumerable(Type implType, LifeCycle ttl, Type dependencyType,
             ImplNumber number)
         {
+            
             if (ttl != LifeCycle.Singleton)
             {
                 return CreateInstance(implType);
@@ -72,7 +80,7 @@ namespace DependencyInjection.DependencyProvider
                 return this._singletons[dependencyType]
                     .Find(singletonContainer => number.HasFlag(singletonContainer.ImplNumber)).Instance;
             }
-
+            
             var result = CreateInstance(implType);
             this.AddToSingletons(dependencyType, result, number);
             return result;

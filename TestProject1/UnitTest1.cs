@@ -20,8 +20,6 @@ namespace TestProject1
             DependenciesConfiguration1 = new DependencyConfig();
             DependenciesConfiguration1.Register<ISomeInterface, Class>();
             DependenciesConfiguration1.Register<ITestClass, TestClass>();
-            DependenciesConfiguration1.Register<IB, ClassA>(LifeCycle.Singleton,ImplNumber.First);
-            DependenciesConfiguration1.Register<IA, ClassB>(LifeCycle.Singleton,ImplNumber.Second);
             DependenciesConfiguration2 = new DependencyConfig();
             DependenciesConfiguration2.Register<ISomeInterface, Class>();
             DependenciesConfiguration2.Register<ISomeInterface, Class2>();
@@ -44,7 +42,7 @@ namespace TestProject1
             int numberOfKeys=DependenciesConfiguration1.DependenciesDictionary.Keys.Count;
             Assert.IsTrue(keyOfISomeInterface, "Dependency dictionary hasn't key ISomeInterface.");
             Assert.IsTrue(keyOfITestClass, "Dependency dictionary hasn't key ITestClass.");
-            Assert.AreEqual(numberOfKeys, 4,"Dependency dictionary has another number of keys.");
+            Assert.AreEqual(numberOfKeys, 2,"Dependency dictionary has another number of keys.");
         }
 
         [Test]
@@ -90,10 +88,9 @@ namespace TestProject1
             var obj11 = provider.Resolve<ITestClass>();
             var obj12 = provider.Resolve<ITestClass>();
             var b1 = obj11 == obj12;
-
+            
             int count1 = provider._singletons.Count;
             Assert.AreEqual(count1, 2, "Wrong number of Singleton objects in Dictionary for Singleton");
-
             var dep2 = new DependencyConfig();
             dep2.Register<ISomeInterface, Class>(LifeCycle.InstancePerDependency);
             dep2.Register<ITestClass, TestClass>(LifeCycle.InstancePerDependency);
@@ -107,6 +104,24 @@ namespace TestProject1
 
             Assert.IsTrue(b1, "Different objects for singleton object.");
             Assert.IsFalse(b2, "The same object using InstancePerDependency");
+        }
+        [Test]
+        public void ABA_SigletonCircularDependencyTest()
+        {
+            var dep1 = new DependencyConfig();
+            dep1.Register<IA, ClassA>(LifeCycle.Singleton);     
+            dep1.Register<IB, ClassB>(LifeCycle.Singleton);
+            var provider = new DependencyProvider(dep1);
+            ClassA obj11 = (ClassA)provider.Resolve<IA>();
+            int numberOfKeys=dep1.DependenciesDictionary.Keys.Count;
+            bool keyOfIA =dep1.DependenciesDictionary.ContainsKey(typeof(IA));
+            bool keyOfIB =dep1.DependenciesDictionary.ContainsKey(typeof(IB));
+            Assert.IsTrue(keyOfIA , "Dependency dictionary hasn't key IA.");
+            Assert.IsTrue(keyOfIB, "Dependency dictionary hasn't key IB.");
+            Assert.AreEqual(numberOfKeys, 2,"Dependency dictionary has another number of keys.");
+            Assert.IsNotNull(obj11);
+            Assert.IsNotNull(obj11.ib);
+
         }
         
         [Test]
