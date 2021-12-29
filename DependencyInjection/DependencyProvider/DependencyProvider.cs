@@ -12,11 +12,11 @@ namespace DependencyInjection.DependencyProvider
 {
     public class DependencyProvider
     {
-        
         private readonly DependencyConfig _configuration;
         public readonly Dictionary<Type, List<SingletonContainer>> _singletons;
-        private readonly Stack<Type> _recursionStackResolver = new Stack<Type>();
-        private bool circularDependency;
+        private readonly Stack<Type> _recursionStack = new Stack<Type>();
+        private Dictionary<Type, Type> nullParameters = new Dictionary<Type, Type>();
+
         public DependencyProvider(DependencyConfig configuration)
         {
             ConfigValidator configValidator = new ConfigValidator(configuration);
@@ -37,55 +37,104 @@ namespace DependencyInjection.DependencyProvider
 
         public object Resolve(Type dependencyType, ImplNumber number = ImplNumber.Any)
         {
-            object result;
-            if (circularDependency)
+
+            if (_recursionStack.Contains(dependencyType))
             {
-                circularDependency = false;
                 return null;
             }
-            
-            if (_recursionStackResolver.Contains(dependencyType))
-            {
-                circularDependency = true;
-            }
 
-            _recursionStackResolver.Push(dependencyType);
-            if (this.IsIEnumerable(dependencyType))
+            _recursionStack.Push(dependencyType);
+
+            object result;
+            if (IsIEnumerable(dependencyType))
             {
                 result = CreateEnumerable(dependencyType.GetGenericArguments()[0]);
             }
             else
             {
-                
                 ImplContainer container = GetImplContainerByDependencyType(dependencyType, number);
                 Type requiredType = GetGeneratedType(dependencyType, container.ImplementationsType);
                 result = this.ResolveNonIEnumerable(requiredType, container.TimeToLive, dependencyType, container.ImplNumber);
             }
 
-            _recursionStackResolver.Pop();
             return result;
         }
 
         private object ResolveNonIEnumerable(Type implType, LifeCycle ttl, Type dependencyType,
             ImplNumber number)
         {
-            
             if (ttl != LifeCycle.Singleton)
             {
-                return CreateInstance(implType);
+                return CreateInstance(dependencyType,implType);
             }
 
-         
-            if (IsInSingletons(dependencyType, implType, number))
+            if (!IsInSingletons(dependencyType, implType, number))
             {
-                return this._singletons[dependencyType]
-                    .Find(singletonContainer => number.HasFlag(singletonContainer.ImplNumber)).Instance;
+                var result = CreateInstance(dependencyType,implType);
+                AddToSingletons(dependencyType, result, number);
+                    _recursionStack.Pop();
+                    replaceParametersOfNullObject(dependencyType);
             }
-            
-            var result = CreateInstance(implType);
-            this.AddToSingletons(dependencyType, result, number);
-            return result;
-           
+            return _singletons[dependencyType]
+                   .Find(singletonContainer => number.HasFlag(singletonContainer.ImplNumber))
+                   ?.Instance;
+        }
+
+        private void replaceParametersOfNullObject(Type replaceType)
+        {
+            foreach(KeyValuePair<Type, Type> keyValuePair in nullParameters)
+            {
+                if (replaceType == keyValuePair.Value)
+                {
+                    object objectWithNull = Resolve(keyValuePair.Key, ImplNumber.Any);
+                    PropertyInfo[] propertyInfos = objectWithNull.GetType().GetProperties();
+                    for(int i = 0; i < propertyInfos.Length; i++)
+                    {
+                        if (propertyInfos[i].PropertyType == keyValuePair.Value){
+                            _recursionStack.Pop();
+                            object replaceObject = Resolve(replaceType, ImplNumber.Any);
+                            objectWithNull.GetType().GetProperty(propertyInfos[i].Name)?.SetValue(objectWithNull, replaceObject);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private object CreateInstance(Type dependecyType, Type implementationType)
+        {
+            var constructors = implementationType.GetConstructors(BindingFlags.Instance | BindingFlags.Public);
+            foreach (var constructor in constructors)
+            {
+                var constructorParams = constructor.GetParameters();
+                var generatedParams = new List<dynamic>();
+                foreach (var parameterInfo in constructorParams)
+                {
+                    dynamic parameter;
+                    if (parameterInfo.ParameterType.IsInterface)
+                    {
+                        var number = parameterInfo.GetCustomAttribute<DependencyKeyAttribute>()?.ImplNumber ?? ImplNumber.Any;
+                        parameter = Resolve(parameterInfo.ParameterType, number);
+                        if(parameter == null)
+                        {
+                            if (!nullParameters.ContainsKey(dependecyType))
+                            {
+                                nullParameters.Add(dependecyType, parameterInfo.ParameterType);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+
+                    generatedParams.Add(parameter);
+                }
+
+                return constructor.Invoke(generatedParams.ToArray());
+            }
+
+            throw new ArgumentException("Cannot create instance of class");
         }
 
         private ImplContainer GetImplContainerByDependencyType(Type dependencyType, ImplNumber number)
@@ -94,7 +143,6 @@ namespace DependencyInjection.DependencyProvider
             if (dependencyType.IsGenericType)
             {
                 container = GetImplementationsContainerLast(dependencyType, number);
-                // возвращает значение своего левого операнда, если оно не null; в противном случае он вычисляет правый операнд и возвращает его результат.
                 container ??= GetImplementationsContainerLast(dependencyType.GetGenericTypeDefinition(), number);
             }
             else
@@ -110,34 +158,7 @@ namespace DependencyInjection.DependencyProvider
             return dependencyType.GetInterfaces().Any(i => i.Name == "IEnumerable");
         }
 
-        private object CreateInstance(Type implementationType)
-        {
-            var constructors = implementationType.GetConstructors(BindingFlags.Instance | BindingFlags.Public);
-            foreach (var constructor in constructors)
-            {
-                var constructorParams = constructor.GetParameters();
-                var generatedParams = new List<dynamic>();
-                foreach (var parameterInfo in constructorParams)
-                {
-                    dynamic parameter;
-                    if (parameterInfo.ParameterType.IsInterface)
-                    {
-                        var number = parameterInfo.GetCustomAttribute<DependencyKeyAttribute>()?.ImplNumber ?? ImplNumber.Any;
-                        parameter = Resolve(parameterInfo.ParameterType, number);
-                    }
-                    else
-                    {
-                        break;
-                    }
 
-                    generatedParams.Add(parameter);
-                }
-
-                return constructor.Invoke(generatedParams.ToArray());
-            }
-
-            throw new ArgumentException("Cannot create instance of class");
-        }
 
         private Type GetGeneratedType(Type dependencyType, Type implementationType)
         {
