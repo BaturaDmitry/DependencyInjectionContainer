@@ -101,49 +101,46 @@ namespace TestProject1
 
             int count2 = provider2._singletons.Count;
             Assert.AreEqual(count2, 0, "Wrong number of Singleton objects in Dictionary for InstancePerDependency");
-
             Assert.IsTrue(b1, "Different objects for singleton object.");
             Assert.IsFalse(b2, "The same object using InstancePerDependency");
         }
+        // А-Б-А
         [Test]
-        public void ABA_SigletonCircularDependencyTest()
+        public void ABA_test()
         {
-            var dep1 = new DependencyConfig();
-            dep1.Register<IA, ClassA>(LifeCycle.Singleton);     
-            dep1.Register<IB, ClassB>(LifeCycle.Singleton);
-            var provider = new DependencyProvider(dep1);
-            ClassA obj11 = (ClassA)provider.Resolve<IA>();
-            ClassB obj12 = (ClassB)provider.Resolve<IB>();
-            int numberOfKeys=dep1.DependenciesDictionary.Keys.Count;
-            bool keyOfIA =dep1.DependenciesDictionary.ContainsKey(typeof(IA));
-            bool keyOfIB =dep1.DependenciesDictionary.ContainsKey(typeof(IB));
-            Assert.IsTrue(keyOfIA , "Dependency dictionary hasn't key IA.");
-            Assert.IsTrue(keyOfIB, "Dependency dictionary hasn't key IB.");
-            Assert.AreEqual(numberOfKeys, 2,"Dependency dictionary has another number of keys.");
-            Assert.IsNotNull(obj11);
-            Assert.IsNotNull(obj11.ib);
-            Assert.IsNotNull(obj12);
-            Assert.IsNotNull(obj12.ia);
+            var dependencies = new DependencyConfig();
+            var provider = new DependencyProvider(dependencies);
+            dependencies.Register<IA, ClassA>(LifeCycle.Singleton, ImplNumber.First);
+            dependencies.Register<IB, ClassB>(LifeCycle.Singleton, ImplNumber.First);
+            ClassA a = (ClassA)provider.Resolve<IA>(ImplNumber.First);
+            ClassB b = (ClassB)provider.Resolve<IB>(ImplNumber.First);
+            Assert.AreSame(a,b.ia);
+        }
+        
+        
+        [Test]
+        public void selfdependency_Test()
+        {
+            var dependencies = new DependencyConfig();
+            var provider = new DependencyProvider(dependencies);
+            dependencies.Register<ISelf, Self>(LifeCycle.Singleton, ImplNumber.First);
+            Self self = (Self)provider.Resolve<ISelf>(ImplNumber.First);
+            Assert.IsTrue(self.iself.GetType().Equals(typeof(Self)));
+            Assert.AreSame(self,self.iself);
         }
         
         [Test]
-        public void A()
+        public void ABCA_test()
         {
-            var dep1 = new DependencyConfig();
-            dep1.Register<IA, ClassWithA>(LifeCycle.Singleton);
-            var provider = new DependencyProvider(dep1);
-            ClassWithA obj11 = (ClassWithA)provider.Resolve<IA>();
-            Assert.NotNull(obj11.ia);
-        }
-        
-        [Test]
-        public void ImplNumberProvider()
-        {
-            var provider = new DependencyProvider(DependenciesConfiguration2);
-            var result = provider.Resolve<ITestClass>(ImplNumber.First);
-            var result1 = provider.Resolve<ITestClass>(ImplNumber.Second);
-            Assert.AreEqual(result.GetType(), typeof(TestClass), "Wrong type for First dependency.");
-            Assert.AreEqual(result1.GetType(), typeof(TestClass2), "Wrong type for Second dependency");
+            var dependencies = new DependencyConfig();
+            var provider = new DependencyProvider(dependencies);
+            dependencies.Register<IQ, Q>(LifeCycle.Singleton, ImplNumber.First);
+            dependencies.Register<IW, W>(LifeCycle.Singleton, ImplNumber.First);
+            dependencies.Register<IE, E>(LifeCycle.Singleton, ImplNumber.First);
+            Q q = (Q)provider.Resolve<IQ>(ImplNumber.First);
+            W w = (W)provider.Resolve<IW>(ImplNumber.First);
+            E e = (E)provider.Resolve<IE>(ImplNumber.Any);
+            Assert.AreSame(q,e.iq);
         }
     }
     

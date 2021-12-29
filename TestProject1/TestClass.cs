@@ -81,37 +81,97 @@
                 }
             }
 
-            public interface IA
+            interface IB
             {
-        
+            
             }
-            public interface IB
+
+            class ClassB : IB
             {
-        
-            }
-            public  class ClassA : IA
-            {
-                public IB ib;
-                public ClassA(IB ib)
-                {
-                    this.ib = ib;
-                }
-            }
-           public class ClassB : IB
-            {
-                public IA ia;
+                public IA ia { get; set; }
                 public ClassB(IA ia)
                 {
                     this.ia = ia;
                 }
+             
             }
-           public class ClassWithA : IA
-           {
-               public IA ia;
-               public ClassWithA(IA ia)
-               {
-                   this.ia = ia;
-               }
-           }
+
+            interface IA
+            {
             
+            }
+
+            class ClassA : IA
+            {
+                public IB ib { get; set; }
+                public ClassA(IB ib)
+                {
+                    this.ib = ib;
+                }
+              
+            }
+           interface ISelf
+           {
+             
+           }
+
+           class Self : ISelf
+           {
+               public ISelf iself { get; set; }
+
+               public Self(ISelf self)
+               {
+                   this.iself = self;
+               }
+               
+           }
+           interface IQ
+           {
+     
+           }
+
+           class Q : IQ
+           {
+               public IW iw { get; set; }
+               public Q(IW iw)
+               {
+                   this.iw = iw;
+               }
+
+            
+           }
+
+           interface IW
+           {
+       
+           }
+
+           class W : IW
+           {
+               public IE ie { get; set; }
+               public W(IE ie)
+               {
+                   this.ie = ie;
+               }
+               
+           }
+
+           interface IE
+           {
+        
+           }
+
+           class E : IE
+           {
+               public IQ iq { get; set; }
+               public E(IQ iq)
+               {
+                   this.iq = iq;
+               }
+               
+           }
+
+           
+
+
 }
